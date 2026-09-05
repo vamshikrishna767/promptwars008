@@ -1,0 +1,18 @@
+QUEST DIAGNOSTICS CLINICAL LABORATORY
+Specimen Date: 2025-09-02 | Report Date: 2025-09-02
+Patient: Sarah Jenkins | Age: 54 | Sex: Female | MRN: 902841
+
+TEST NAME                    RESULT   UNITS      REFERENCE RANGE   STATUS
+-------------------------------------------------------------------------
+Fasting Blood Sugar          176      mg/dL      70 - 99           High
+HbA1c                        8.8      %          < 5.7             High
+Total Cholesterol            232      mg/dL      < 200             High
+Triglycerides                205      mg/dL      < 150             High
+HDL Cholesterol              44       mg/dL      > 50              Low
+LDL Cholesterol              147      mg/dL      < 100             High
+Serum Creatinine             1.0      mg/dL      0.6 - 1.1         Normal
+eGFR                         68       mL/min     > 60              Normal
+Potassium                    4.5      mEq/L      3.5 - 5.1         Normal
+ALT (SGPT)                   62       U/L        7 - 45            High
+AST (SGOT)                   48       U/L        8 - 40            High
+High Sensitivity CRP         3.9      mg/L       < 1.0             High

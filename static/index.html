@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedLens — AI Clinical Information Intelligence</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            teal: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Chart.js for Longitudinal Biomarker Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col antialiased">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Tagline -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 to-teal-800 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
+          <i data-lucide="microscope" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xl font-bold tracking-tight text-slate-900">Med<span class="text-teal-700">Lens</span></span>
+            <span class="text-xs bg-teal-100 text-teal-800 font-semibold px-2 py-0.5 rounded-full border border-teal-200">v2.0 AI Intelligence</span>
+          </div>
+          <p class="text-xs text-slate-500">Clinical Record Structuring & Reference-Range Intelligence</p>
+        </div>
+      </div>
+
+      <!-- Center: Patient Selector -->
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <i data-lucide="user" class="w-4 h-4 text-slate-500 ml-2"></i>
+          <select id="patientSelect" class="bg-transparent text-sm font-medium text-slate-700 py-1 px-2 focus:outline-none cursor-pointer">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <button onclick="openModal('modalNewPatient')" class="text-xs font-semibold text-teal-700 hover:text-teal-800 flex items-center space-x-1 p-1.5 rounded-lg hover:bg-teal-50 transition">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">New Patient</span>
+        </button>
+      </div>
+
+      <!-- Right Actions: Role Toggle & Export Buttons -->
+      <div class="flex items-center space-x-3">
+        <!-- Role Switcher -->
+        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+          <button id="roleBtnClinician" onclick="switchRole('CLINICIAN')" class="px-3 py-1 rounded-lg transition bg-white shadow-sm text-teal-800 flex items-center space-x-1.5">
+            <i data-lucide="stethoscope" class="w-3.5 h-3.5"></i>
+            <span>Clinician View</span>
+          </button>
+          <button id="roleBtnPatient" onclick="switchRole('PATIENT')" class="px-3 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center space-x-1.5">
+            <i data-lucide="heart" class="w-3.5 h-3.5"></i>
+            <span>Patient View</span>
+          </button>
+        </div>
+
+        <!-- Action Buttons -->
+        <button onclick="openModal('modalUpload')" class="inline-flex items-center space-x-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-3 py-2 rounded-xl transition shadow-sm">
+          <i data-lucide="file-up" class="w-3.5 h-3.5"></i>
+          <span>Upload Lab Report</span>
+        </button>
+
+        <div class="relative inline-block text-left">
+          <button id="exportDropdownBtn" onclick="toggleExportMenu()" class="inline-flex items-center space-x-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition shadow-sm">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Export</span>
+            <i data-lucide="chevron-down" class="w-3 h-3"></i>
+          </button>
+          <div id="exportMenu" class="hidden absolute right-0 mt-2 w-48 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-slate-100 z-50">
+            <div class="py-1">
+              <a href="#" onclick="downloadPDF(); return false;" class="flex items-center px-4 py-2 text-xs text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                <i data-lucide="file-text" class="w-4 h-4 mr-2 text-rose-500"></i> Download Clinical PDF
+              </a>
+              <a href="#" onclick="downloadJSON(); return false;" class="flex items-center px-4 py-2 text-xs text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                <i data-lucide="code" class="w-4 h-4 mr-2 text-teal-600"></i> Export FHIR/JSON Bundle
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Persistent Responsible AI Disclaimer Banner -->
+  <div class="bg-amber-50 border-b border-amber-200 py-2 px-4 text-xs text-amber-900 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto flex items-center space-x-2">
+      <i data-lucide="shield-alert" class="w-4 h-4 text-amber-600 flex-shrink-0"></i>
+      <span>
+        <strong>Responsible AI & Clinical Safety Notice:</strong> MedLens is an assistive documentation & clinical intelligence tool. 
+        It does <strong>not</strong> provide medical diagnoses, prescribe medications, or recommend treatment dosages. 
+        All lab findings, reference ranges, and safety conflicts must be clinically verified by a licensed healthcare provider.
+      </span>
+    </div>
+  </div>
+
+  <!-- Main Patient Summary Header Strip -->
+  <section class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        
+        <!-- Left: Patient Demographics Overview -->
+        <div class="flex items-start space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-lg border border-teal-200 shadow-sm" id="patientAvatar">
+            SJ
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-xl font-bold text-slate-900" id="patientNameHeader">Sarah Jenkins</h1>
+              <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-mono" id="patientDemographicsBadge">54y | Female | A+</span>
+              <span class="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-md font-medium" id="patientRoleIndicator">Clinician Review Mode</span>
+            </div>
+            <div class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1" id="patientIntakeSummarySnippet">
+              <span><strong>Conditions:</strong> Type 2 Diabetes, Hypertension</span>
+              <span><strong>Allergies:</strong> <span class="text-rose-600 font-semibold">Penicillin (Severe)</span></span>
+              <span><strong>Active Meds:</strong> Metformin, Lisinopril, Atorvastatin, Amoxicillin</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Quick Metrics -->
+        <div class="flex items-center space-x-2 sm:space-x-4 text-center">
+          <div class="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+            <div class="text-lg font-bold text-slate-800" id="statTotalTests">0</div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500 font-medium">Extracted Tests</div>
+          </div>
+          <div class="bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl">
+            <div class="text-lg font-bold text-rose-700" id="statAbnormalTests">0</div>
+            <div class="text-[10px] uppercase tracking-wider text-rose-600 font-medium">Outside Range</div>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl">
+            <div class="text-lg font-bold text-amber-700" id="statConflicts">0</div>
+            <div class="text-[10px] uppercase tracking-wider text-amber-600 font-medium">Safety Conflicts</div>
+          </div>
+          <div class="bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-xl">
+            <div class="text-lg font-bold text-teal-700" id="statVerifiedPct">0%</div>
+            <div class="text-[10px] uppercase tracking-wider text-teal-600 font-medium">Human Verified</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Clinical Inconsistency / Conflict Alert Banner -->
+  <section id="conflictsBannerContainer" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+    <!-- Populated dynamically if conflicts exist -->
+  </section>
+
+  <!-- Main Navigation Tabs -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+    <div class="border-b border-slate-200">
+      <nav class="-mb-px flex space-x-6 overflow-x-auto text-sm font-medium">
+        
+        <button onclick="switchTab('tabStructured')" id="navTabStructured" class="tab-btn border-teal-700 text-teal-700 border-b-2 py-3 px-1 flex items-center space-x-2">
+          <i data-lucide="columns-2" class="w-4 h-4"></i>
+          <span>Structured Records & Source Viewer</span>
+        </button>
+
+        <button onclick="switchTab('tabLongitudinal')" id="navTabLongitudinal" class="tab-btn border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 py-3 px-1 flex items-center space-x-2">
+          <i data-lucide="trending-up" class="w-4 h-4"></i>
+          <span>Longitudinal Trends (<span id="tabCountTrends">0</span>)</span>
+        </button>
+
+        <button onclick="switchTab('tabIntake')" id="navTabIntake" class="tab-btn border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 py-3 px-1 flex items-center space-x-2">
+          <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+          <span>Patient Intake & History</span>
+        </button>
+
+        <button onclick="switchTab('tabClarifications')" id="navTabClarifications" class="tab-btn border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 py-3 px-1 flex items-center space-x-2">
+          <i data-lucide="help-circle" class="w-4 h-4"></i>
+          <span>Clarifications (<span id="tabCountClarifications">0</span>)</span>
+        </button>
+
+        <button onclick="switchTab('tabSummary')" id="navTabSummary" class="tab-btn border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 py-3 px-1 flex items-center space-x-2">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>AI Clinical Summary</span>
+        </button>
+
+        <button onclick="switchTab('tabAudit')" id="navTabAudit" class="tab-btn border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 py-3 px-1 flex items-center space-x-2">
+          <i data-lucide="history" class="w-4 h-4"></i>
+          <span>Audit & Provenance</span>
+        </button>
+
+      </nav>
+    </div>
+  </div>
+
+  <!-- Content Containers -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- ========================================================= -->
+    <!-- TAB 1: STRUCTURED MEDICAL RECORD & SIDE-BY-SIDE SOURCE VIEW -->
+    <!-- ========================================================= -->
+    <div id="tabStructured" class="tab-pane space-y-4">
+
+      <!-- Filter Controls Bar -->
+      <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+        
+        <!-- Search Input -->
+        <div class="relative w-full md:w-72">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+          <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Search test name or code..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600">
+        </div>
+
+        <!-- Filter Selectors -->
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <!-- Category Filter -->
+          <div class="flex items-center text-xs">
+            <span class="text-slate-500 mr-1.5 font-medium">Panel:</span>
+            <select id="filterCategory" onchange="applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl text-xs py-1.5 px-2.5 focus:outline-none">
+              <option value="ALL">All Categories</option>
+              <option value="Hematology">Hematology</option>
+              <option value="Metabolic">Metabolic & Electrolytes</option>
+              <option value="Renal">Renal / Kidney</option>
+              <option value="Lipid Panel">Lipids</option>
+              <option value="Hepatic">Liver / Hepatic</option>
+              <option value="Thyroid">Thyroid</option>
+              <option value="Iron & Ferritin">Iron & Ferritin</option>
+            </select>
+          </div>
+
+          <!-- Range Status Filter -->
+          <div class="flex items-center text-xs">
+            <span class="text-slate-500 mr-1.5 font-medium">Status:</span>
+            <select id="filterStatus" onchange="applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl text-xs py-1.5 px-2.5 focus:outline-none">
+              <option value="ALL">All Statuses</option>
+              <option value="HIGH">High / Above Range</option>
+              <option value="LOW">Low / Below Range</option>
+              <option value="NORMAL">Normal Range</option>
+              <option value="UNREFERENCED">Unreferenced in Source</option>
+            </select>
+          </div>
+
+          <!-- Report Selector -->
+          <div class="flex items-center text-xs">
+            <span class="text-slate-500 mr-1.5 font-medium">Report:</span>
+            <select id="filterReport" onchange="applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl text-xs py-1.5 px-2.5 focus:outline-none">
+              <option value="ALL">All Reports</option>
+            </select>
+          </div>
+
+          <!-- Reset Filter -->
+          <button onclick="resetFilters()" class="text-xs text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition" title="Reset Filters">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Split Screen Grid: Source Viewer on Left (40%), Structured Record on Right (60%) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- LEFT: Side-by-Side Source Document Viewer (Sticky) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sticky top-20 flex flex-col h-[750px]">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="file-text" class="w-4 h-4 text-teal-700"></i>
+              <h2 class="text-sm font-bold text-slate-900">Source Report Viewer</h2>
+            </div>
+            <span id="sourceReportBadge" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">No document selected</span>
+          </div>
+
+          <!-- Document Selector tabs -->
+          <div class="mt-2 flex items-center space-x-2 overflow-x-auto pb-1" id="sourceReportTabs">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Provenance Snippet Highlight Alert -->
+          <div id="sourceSnippetAlert" class="mt-2 text-xs bg-amber-50 border border-amber-200 text-amber-800 p-2 rounded-xl hidden flex items-center justify-between">
+            <div class="flex items-center space-x-1.5">
+              <i data-lucide="target" class="w-3.5 h-3.5 text-amber-600"></i>
+              <span id="sourceSnippetText" class="font-mono text-[11px]">Clicking any lab item highlights its exact source excerpt.</span>
+            </div>
+            <button onclick="clearSourceHighlight()" class="text-amber-600 hover:text-amber-900 font-bold ml-2">&times;</button>
+          </div>
+
+          <!-- Raw Document Text Preview Area -->
+          <div class="mt-3 flex-1 overflow-y-auto bg-slate-900 text-slate-100 font-mono text-xs p-4 rounded-xl leading-relaxed whitespace-pre-wrap selection:bg-teal-600" id="sourceDocumentContent">
+            Select a report or click "Inspect Source" on any extracted lab result to view the verified source text.
+          </div>
+          
+          <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Traceability: ISO-compliant source provenance</span>
+            <span>Strict reference-range matching</span>
+          </div>
+        </div>
+
+        <!-- RIGHT: Structured Medical Record Items -->
+        <div class="lg:col-span-7 space-y-3">
+          
+          <div class="flex items-center justify-between px-1">
+            <h2 class="text-sm font-bold text-slate-900 flex items-center space-x-1.5">
+              <i data-lucide="table" class="w-4 h-4 text-teal-700"></i>
+              <span>Structured Medical Parameters (<span id="visibleItemsCount">0</span>)</span>
+            </h2>
+            <div class="text-xs text-slate-500">
+              <span>Click <span class="text-teal-700 font-semibold">Inspect</span> to jump to raw document snippet</span>
+            </div>
+          </div>
+
+          <!-- Items Container -->
+          <div id="extractedItemsList" class="space-y-3">
+            <!-- Dynamically populated cards -->
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 2: LONGITUDINAL COMPARISON & DELTA TRACKING -->
+    <!-- ========================================================= -->
+    <div id="tabLongitudinal" class="tab-pane hidden space-y-6">
+      
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+              <i data-lucide="trending-up" class="w-5 h-5 text-teal-700"></i>
+              <span>Biomarker Trajectory & Longitudinal Comparison</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Tracks biomarker progression across multiple sequential laboratory reports with percentage variance.</p>
+          </div>
+
+          <!-- Biomarker Dropdown Selector -->
+          <div class="flex items-center space-x-2">
+            <label class="text-xs font-semibold text-slate-600">Select Biomarker:</label>
+            <select id="trendBiomarkerSelect" onchange="renderSelectedTrendChart()" class="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="mt-4 h-72">
+          <canvas id="longitudinalChart"></canvas>
+        </div>
+
+        <div id="trendInsightBox" class="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="info" class="w-4 h-4 text-teal-700 flex-shrink-0"></i>
+            <span id="trendInterpretationText">Select a biomarker above to evaluate longitudinal variation.</span>
+          </div>
+          <span id="trendDeltaBadge" class="font-bold text-xs px-2.5 py-1 rounded-full bg-slate-200 text-slate-700">0%</span>
+        </div>
+      </div>
+
+      <!-- Longitudinal Biomarkers Summary Matrix Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-900">Comprehensive Longitudinal Biomarker Comparison</h3>
+          <span class="text-xs text-slate-500">Delta calculation: ((Latest - Baseline) / Baseline) * 100%</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-xs text-left" id="longitudinalTable">
+            <thead class="bg-slate-50 text-slate-700 font-semibold">
+              <tr>
+                <th class="py-3 px-4">Biomarker</th>
+                <th class="py-3 px-4">Category</th>
+                <th class="py-3 px-4">Baseline Report</th>
+                <th class="py-3 px-4">Latest Report</th>
+                <th class="py-3 px-4 text-center">Net Delta (%)</th>
+                <th class="py-3 px-4">Clinical Progression Note</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100" id="longitudinalTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 3: PATIENT INTAKE & CLINICAL HISTORY -->
+    <!-- ========================================================= -->
+    <div id="tabIntake" class="tab-pane hidden space-y-6">
+      
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+            <i data-lucide="clipboard-list" class="w-5 h-5 text-teal-700"></i>
+            <span>Patient Intake & Health Profile</span>
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">Source: <span class="font-semibold text-teal-700">Patient Intake Form / Self-Reported</span> (Clearly demarcated from AI extractions)</p>
+        </div>
+        <button onclick="openEditIntakeModal()" class="inline-flex items-center space-x-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-3 py-2 rounded-xl transition shadow-sm">
+          <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+          <span>Edit Intake Data</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Active Symptoms -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-2 mb-3">
+            <i data-lucide="activity" class="w-4 h-4 text-rose-500"></i>
+            <span>Reported Symptoms</span>
+          </h3>
+          <div id="intakeSymptomsList" class="flex flex-wrap gap-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Known Chronic Conditions -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-2 mb-3">
+            <i data-lucide="stethoscope" class="w-4 h-4 text-amber-500"></i>
+            <span>Chronic Diagnosed Conditions</span>
+          </h3>
+          <div id="intakeConditionsList" class="flex flex-wrap gap-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Documented Allergies -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-2 mb-3">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600"></i>
+            <span>Documented Allergies & Sensitivities</span>
+          </h3>
+          <div id="intakeAllergiesList" class="space-y-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Active Medications -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-2 mb-3">
+            <i data-lucide="pill" class="w-4 h-4 text-teal-600"></i>
+            <span>Active Medications & Dosages</span>
+          </h3>
+          <div id="intakeMedicationsList" class="space-y-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Surgical History -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-2 mb-3">
+            <i data-lucide="scissors" class="w-4 h-4 text-slate-500"></i>
+            <span>Previous Surgeries & Procedures</span>
+          </h3>
+          <ul id="intakeSurgeriesList" class="text-xs text-slate-700 space-y-1 list-disc list-inside">
+            <!-- Populated dynamically -->
+          </ul>
+        </div>
+
+        <!-- Family History & Lifestyle -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-2 mb-3">
+            <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>
+            <span>Family Medical History & Lifestyle</span>
+          </h3>
+          <ul id="intakeFamilyList" class="text-xs text-slate-700 space-y-1 list-disc list-inside mb-3">
+            <!-- Populated dynamically -->
+          </ul>
+          <div class="pt-2 border-t border-slate-100 text-xs text-slate-600">
+            <strong>Lifestyle Notes:</strong> <span id="intakeLifestyleNotes">None recorded.</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 4: CONTEXT-AWARE CLARIFICATION QUESTIONS -->
+    <!-- ========================================================= -->
+    <div id="tabClarifications" class="tab-pane hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+              <i data-lucide="help-circle" class="w-5 h-5 text-teal-700"></i>
+              <span>Context-Aware Clinical Clarification Questions</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">
+              MedLens automatically identifies ambiguities, unconfirmed allergy reaction types, missing medication schedules, or testing gaps.
+            </p>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-100 text-teal-800">
+            <span id="unansweredClarificationCount">0</span> Pending Review
+          </span>
+        </div>
+
+        <div id="clarificationsList" class="mt-4 space-y-4">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 5: AI CLINICAL SUMMARY -->
+    <!-- ========================================================= -->
+    <div id="tabSummary" class="tab-pane hidden space-y-6">
+      
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        
+        <!-- Dual perspective switcher -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+              <i data-lucide="sparkles" class="w-5 h-5 text-teal-700"></i>
+              <span>AI-Synthesized Clinical Information Brief</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Non-diagnostic synthesis organized by patient vs provider perspective.</p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button onclick="switchSummaryView('PATIENT')" id="sumViewBtnPatient" class="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-white transition">
+              Patient-Friendly Language
+            </button>
+            <button onclick="switchSummaryView('CLINICIAN')" id="sumViewBtnClinician" class="text-xs font-semibold px-3 py-1.5 rounded-xl border border-teal-600 bg-teal-50 text-teal-800 transition">
+              Clinician SBAR Brief
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary Display Box -->
+        <div class="mt-5 p-5 bg-slate-50 rounded-2xl border border-slate-200 text-sm text-slate-800 leading-relaxed whitespace-pre-wrap font-sans" id="summaryContentBox">
+          Generating clinical summary...
+        </div>
+
+        <!-- Key Highlight Bullets -->
+        <div class="mt-5">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Key Laboratory Findings Extracted From Reports</h3>
+          <div id="summaryKeyFindings" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-slate-500 gap-2">
+          <span>Disclaimer: This summary does not constitute medical advice or a diagnosis.</span>
+          <button onclick="downloadPDF()" class="inline-flex items-center space-x-1 text-teal-700 hover:text-teal-800 font-semibold">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Download Certified PDF Summary</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 6: AUDIT TRAIL & HUMAN VERIFICATION HISTORY -->
+    <!-- ========================================================= -->
+    <div id="tabAudit" class="tab-pane hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+              <i data-lucide="history" class="w-5 h-5 text-teal-700"></i>
+              <span>Audit Trail & Human Verification Log</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Full immutable provenance tracking of all AI extractions, clinician approvals, edits, and intake modifications.</p>
+          </div>
+          <span class="text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-mono" id="auditLogCount">0 entries</span>
+        </div>
+
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-xs text-left">
+            <thead class="bg-slate-50 text-slate-700 font-semibold">
+              <tr>
+                <th class="py-3 px-4">Timestamp</th>
+                <th class="py-3 px-4">Action</th>
+                <th class="py-3 px-4">Actor</th>
+                <th class="py-3 px-4">Previous Value</th>
+                <th class="py-3 px-4">New Value</th>
+                <th class="py-3 px-4">Details</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100" id="auditTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================================= -->
+  <!-- MODAL: HUMAN VERIFICATION & ITEM EDIT -->
+  <!-- ========================================================= -->
+  <div id="modalVerify" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <i data-lucide="check-square" class="w-5 h-5 text-teal-700"></i>
+          <span>Human Verification & Lab Edit</span>
+        </h3>
+        <button onclick="closeModal('modalVerify')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <input type="hidden" id="editItemId">
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-500 font-semibold mb-1">Test Name:</label>
+          <input type="text" id="editItemName" disabled class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-medium text-slate-700">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1">Value:</label>
+            <input type="text" id="editItemValue" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900 focus:ring-2 focus:ring-teal-500">
+          </div>
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1">Unit:</label>
+            <input type="text" id="editItemUnit" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900 focus:ring-2 focus:ring-teal-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-500 font-semibold mb-1">Source Reference Range:</label>
+          <input type="text" id="editItemRange" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900 focus:ring-2 focus:ring-teal-500">
+          <p class="text-[10px] text-amber-600 mt-1">Rule: Only enter reference range present in source report; never invent ranges.</p>
+        </div>
+
+        <div>
+          <label class="block text-slate-500 font-semibold mb-1">Verification Status:</label>
+          <select id="editItemStatus" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-900 focus:ring-2 focus:ring-teal-500">
+            <option value="VERIFIED">VERIFIED (Clinician Confirmed)</option>
+            <option value="EDITED">EDITED (Corrected by Clinician)</option>
+            <option value="FLAGGED">FLAGGED (Disputed / Hallucination)</option>
+            <option value="UNREVIEWED">UNREVIEWED</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-500 font-semibold mb-1">Reviewer Name:</label>
+          <input type="text" id="editItemReviewer" value="Dr. Clinician Reviewer" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900">
+        </div>
+
+        <div>
+          <label class="block text-slate-500 font-semibold mb-1">Clinical Review Notes:</label>
+          <textarea id="editItemNotes" rows="2" placeholder="e.g. Cross-checked with primary laboratory sheet page 1." class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900"></textarea>
+        </div>
+
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+          <label class="block text-slate-500 font-semibold mb-1 text-[11px]">Original Source Snippet:</label>
+          <p id="editItemSnippet" class="font-mono text-[11px] text-slate-600 whitespace-pre-wrap"></p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeModal('modalVerify')" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+          Cancel
+        </button>
+        <button onclick="saveItemVerification()" class="px-4 py-2 text-xs font-semibold bg-teal-700 hover:bg-teal-800 text-white rounded-xl shadow-sm transition">
+          Confirm & Save Verification
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL: UPLOAD MEDICAL REPORT -->
+  <!-- ========================================================= -->
+  <div id="modalUpload" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <i data-lucide="file-up" class="w-5 h-5 text-teal-700"></i>
+          <span>Upload Medical Report</span>
+        </h3>
+        <button onclick="closeModal('modalUpload')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <form id="uploadReportForm" onsubmit="handleReportUpload(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-500 font-semibold mb-1">Select File (PDF or Text):</label>
+          <input type="file" id="uploadFileInput" accept=".pdf,.txt" required class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+        </div>
+
+        <div>
+          <label class="block text-slate-500 font-semibold mb-1">Report Title / Description (Optional):</label>
+          <input type="text" id="uploadTitleInput" placeholder="e.g. Follow-Up Lipid & Glucose Panel" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1">Report Date (Optional):</label>
+            <input type="date" id="uploadDateInput" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900">
+          </div>
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1">Laboratory Facility (Optional):</label>
+            <input type="text" id="uploadFacilityInput" placeholder="e.g. Quest / Labcorp" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900">
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <p class="text-[11px] text-slate-400">
+            MedLens will extract test names, values, units, and source reference intervals, cross-referencing against active medications and intake history.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeModal('modalUpload')" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+            Cancel
+          </button>
+          <button type="submit" id="uploadSubmitBtn" class="px-4 py-2 text-xs font-semibold bg-teal-700 hover:bg-teal-800 text-white rounded-xl shadow-sm transition flex items-center space-x-1.5">
+            <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+            <span>Process & Extract</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL: EDIT PATIENT INTAKE FORM -->
+  <!-- ========================================================= -->
+  <div id="modalEditIntake" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <i data-lucide="clipboard-edit" class="w-5 h-5 text-teal-700"></i>
+          <span>Edit Patient Clinical Intake</span>
+        </h3>
+        <button onclick="closeModal('modalEditIntake')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <form id="editIntakeForm" onsubmit="handleSaveIntake(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-600 font-semibold mb-1">Active Symptoms (comma-separated):</label>
+          <input type="text" id="intakeFormSymptoms" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900">
+        </div>
+
+        <div>
+          <label class="block text-slate-600 font-semibold mb-1">Chronic Conditions (comma-separated):</label>
+          <input type="text" id="intakeFormConditions" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900">
+        </div>
+
+        <!-- Allergies Array -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-slate-600 font-semibold">Documented Allergies:</label>
+            <button type="button" onclick="addAllergyRow()" class="text-[11px] text-teal-700 font-bold hover:underline">+ Add Allergy</button>
+          </div>
+          <div id="intakeFormAllergiesContainer" class="space-y-2">
+            <!-- Dynamic rows -->
+          </div>
+        </div>
+
+        <!-- Medications Array -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-slate-600 font-semibold">Active Medications:</label>
+            <button type="button" onclick="addMedicationRow()" class="text-[11px] text-teal-700 font-bold hover:underline">+ Add Medication</button>
+          </div>
+          <div id="intakeFormMedsContainer" class="space-y-2">
+            <!-- Dynamic rows -->
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-600 font-semibold mb-1">Lifestyle & Environmental Notes:</label>
+          <textarea id="intakeFormLifestyle" rows="2" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeModal('modalEditIntake')" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 text-xs font-semibold bg-teal-700 hover:bg-teal-800 text-white rounded-xl shadow-sm transition">
+            Update Intake Record
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL: ADD NEW PATIENT -->
+  <!-- ========================================================= -->
+  <div id="modalNewPatient" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <i data-lucide="user-plus" class="w-5 h-5 text-teal-700"></i>
+          <span>Create New Patient Record</span>
+        </h3>
+        <button onclick="closeModal('modalNewPatient')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <form id="newPatientForm" onsubmit="handleCreatePatient(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-500 font-semibold mb-1">Full Name:</label>
+          <input type="text" id="newPatientName" required placeholder="e.g. David Vance" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1">Age:</label>
+            <input type="number" id="newPatientAge" required min="0" max="130" placeholder="45" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900">
+          </div>
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1">Sex:</label>
+            <select id="newPatientSex" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-500 font-semibold mb-1">Blood Group:</label>
+          <input type="text" id="newPatientBlood" placeholder="O+, A+, etc." class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900">
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeModal('modalNewPatient')" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 text-xs font-semibold bg-teal-700 hover:bg-teal-800 text-white rounded-xl shadow-sm transition">
+            Create Patient
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Client JavaScript Logic -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

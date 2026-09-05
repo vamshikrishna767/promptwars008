@@ -1,0 +1,101 @@
+/* MedLens - Custom Clinical Theme Styles */
+
+:root {
+  --primary-teal: #0f766e;
+  --primary-teal-dark: #115e59;
+  --primary-teal-light: #f0fdfa;
+  --clinical-slate: #0f172a;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1e293b;
+  background-color: #f8fafc;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Side-by-side highlight pulse */
+.source-highlight {
+  background-color: #fef08a !important;
+  border-left: 4px solid #eab308 !important;
+  padding-left: 8px !important;
+  transition: all 0.3s ease;
+}
+
+/* Status Badges */
+.badge-normal {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.badge-high {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+.badge-low {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+.badge-critical {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #f87171;
+  font-weight: 700;
+  animation: pulse-slow 2s infinite;
+}
+.badge-unreferenced {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+/* Verification State Badges */
+.badge-verified {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+.badge-unreviewed {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.badge-edited {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+.badge-flagged {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Clean Modal Animation */
+.modal-enter {
+  opacity: 0;
+  transform: scale(0.97);
+}
+.modal-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
